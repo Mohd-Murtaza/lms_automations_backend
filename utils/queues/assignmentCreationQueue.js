@@ -79,7 +79,7 @@ const assignmentWorker = new Worker(
     } catch (err) {
       console.error("❌ Worker runtime error:", err.message);
     } finally {
-      // await browser.close();
+      await browser.close();
       console.log("🪟 Browser closed.");
     }
   },

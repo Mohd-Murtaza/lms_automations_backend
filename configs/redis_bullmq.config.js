@@ -16,7 +16,7 @@ export const connection = new IORedis({
 // 🎯 Define and export queues
 export const assessmenCloneRenameQueue = new Queue('assessmenCloneRenameQueue', { connection });
 export const assignmentCreationQueue = new Queue('assignmentCreationQueue', { connection });
-
+export const notesUpdationQueue = new Queue('notesUpdationQueue', { connection });
 // (optional) — if you plan to add more related queues later:
 //export const automationEventsQueue = new Queue('automationEventsQueue', { connection });
 

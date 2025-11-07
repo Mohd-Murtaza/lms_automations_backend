@@ -1,7 +1,8 @@
 import express from "express";
 import dotenv from "dotenv";
 import { getSheetsClient } from "../configs/googleSheetClient.js";
-import { assessmenCloneRenameQueue, assignmentCreationQueue, connection} from "../configs/redis_bullmq.config.js";
+import { assessmenCloneRenameQueue, assignmentCreationQueue, connection, notesUpdationQueue} from "../configs/redis_bullmq.config.js";
+import { batch } from "googleapis/build/src/apis/batch/index.js";
 dotenv.config();
 
 export const AutomationRouter = express.Router();
@@ -59,7 +60,7 @@ AutomationRouter.post("/add-assignment-data", async (req, res) => {
         pendingAssignments.push(data);
       }
     }
-
+    
     // Add ONE job with all non-cloned assignments
     if (pendingAssignments.length > 0) {
       await assessmenCloneRenameQueue.add("bulkAssessmentCloneJob", {
@@ -134,3 +135,132 @@ AutomationRouter.post("/create-assignments", async (req, res) => {
     });
   }
 });
+
+AutomationRouter.post("/start-update-notes", async (req, res) => {
+  try {
+    // Step 1️⃣ — Get all assignment data from Redis
+    const keys = await connection.keys("assignment:*");
+    const allAssignments = [];
+
+    for (const key of keys) {
+      const data = await connection.hgetall(key);
+      if (data && Object.keys(data).length > 0) {
+        allAssignments.push(data);
+      }
+    }
+
+    if (allAssignments.length === 0) {
+      return res.status(404).json({ message: "No assignments found in Redis" });
+    }
+
+    // Step 2️⃣ — Filter only those whose notes are not updated yet
+    const pendingNotesToUpdate = allAssignments.filter(
+      (a) =>
+        !a.isNotesUpdated ||
+        (a.isNotesUpdated && a.isNotesUpdated.toLowerCase() !== "true")
+    );
+
+    console.log("Pending notes to update:", pendingNotesToUpdate.length);
+
+    if (pendingNotesToUpdate.length === 0) {
+      return res.status(200).json({
+        message: "✅ All Assignments already have updated notes.",
+      });
+    }
+
+    // Step 3️⃣ — Add one job for all pending notes
+    const job = await notesUpdationQueue.add("bulkNotesUpdateJob", {
+      lectures: pendingNotesToUpdate, // still calling them 'lectures' for compatibility
+    });
+
+    return res.json({
+      message: "✅ Notes updation job queued successfully.",
+      queuedLectures: pendingNotesToUpdate.length,
+      jobId: job.id,
+    });
+  } catch (err) {
+    console.error("❌ Error while queuing notes update:", err.message);
+    return res.status(500).json({
+      message: "Server error while adding notes update job",
+      error: err.message,
+    });
+  }
+});
+
+// ✅ GET all assignment data summaries
+AutomationRouter.get("/get-automation-status", async (req, res) => {
+  try {
+    const keys = await connection.keys("assignment:*");
+
+    if (keys.length === 0) {
+      return res.status(404).json({ message: "No assignment data found in Redis." });
+    }
+
+    const allAssignments = [];
+    for (const key of keys) {
+      const data = await connection.hgetall(key);
+      if (data && Object.keys(data).length > 0) {
+        allAssignments.push({
+          title: data.assesment_template_name || key.replace("assignment:", ""),
+          batch:data.batch,
+          isCloned: data.isCloned || "N/A",
+          isAssignmentCreated: data.isAssignmentCreated || "N/A",
+          isNotesUpdated: data.isNotesUpdated || "N/A",
+        });
+      }
+    }
+
+    return res.json({
+      total: allAssignments.length,
+      assignments: allAssignments,
+    });
+  } catch (err) {
+    console.error("❌ Error fetching automation status:", err.message);
+    return res.status(500).json({
+      message: "Server error while fetching automation status",
+      error: err.message,
+    });
+  }
+});
+
+// ✅ Clear all Redis data related to automation
+AutomationRouter.delete("/cleardata", async (req, res) => {
+  try {
+    // Delete all assignment keys
+    const assignmentKeys = await connection.keys("assignment:*");
+    if (assignmentKeys.length > 0) {
+      await connection.del(assignmentKeys);
+      console.log(`🧹 Deleted ${assignmentKeys.length} assignment keys`);
+    }
+
+    // Clear all queues (BullMQ keys)
+    const queuesToClear = [
+      "assessmenCloneRenameQueue",
+      "assignmentCreationQueue",
+      "notesUpdationQueue",
+    ];
+
+    for (const q of queuesToClear) {
+      const pattern = `bull:${q}:*`;
+      const queueKeys = await connection.keys(pattern);
+      if (queueKeys.length > 0) {
+        await connection.del(queueKeys);
+        console.log(`🧼 Cleared queue data for ${q}`);
+      }
+    }
+
+    return res.json({
+      message: "🧹 All assignment and queue data cleared successfully.",
+      clearedAssignments: assignmentKeys.length,
+    });
+  } catch (err) {
+    console.error("❌ Error clearing Redis data:", err.message);
+    return res.status(500).json({
+      message: "Server error while clearing Redis data",
+      error: err.message,
+    });
+  }
+});
+
+
+

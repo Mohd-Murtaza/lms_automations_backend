@@ -6,8 +6,9 @@
   "type": "module",
   "scripts": {
     "server": "nodemon server.js",
-    "clone":"nodemon ./utils/queues/assessmentCloneRenameQueue.js",
-     "create":"nodemon ./utils/queues/assignmentCreationQueue.js",
+    "clone": "nodemon ./utils/queues/assessmentCloneRenameQueue.js",
+    "create": "nodemon ./utils/queues/assignmentCreationQueue.js",
+    "update": "nodemon ./utils/queues/notesUpdationQueue.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {

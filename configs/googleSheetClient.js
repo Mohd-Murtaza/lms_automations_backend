@@ -1,4 +1,6 @@
 import { google } from "googleapis";
+import dotenv from "dotenv";
+dotenv.config();
 import fs from "fs"
 import open from "open";
 const TOKEN_PATH = "tokens.json"
@@ -85,13 +87,13 @@ export const getAuthClient = () => {
     return oAuth2Client;
   }
 
-  if (tokens && tokens.refresh_token) {
-    oAuth2Client.setCredentials(tokens);
-    console.log("♻️ Access token expired, refreshing...");
-  // open(authUrl);
-   // return oAuth2Client;
-   return null
-  }
+  // if (tokens && tokens.refresh_token) {
+  //   oAuth2Client.setCredentials(tokens);
+  //   console.log("♻️ Access token expired, refreshing...");
+  //  //open(authUrl);
+  //  // return oAuth2Client;
+  //  return null
+  // }
 
   // No valid tokens → prompt user
   console.log("⚠️ No valid tokens, please authenticate");
