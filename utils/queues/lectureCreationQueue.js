@@ -2,19 +2,18 @@ import { Worker } from "bullmq";
 import { chromium } from "playwright";
 import dotenv from "dotenv";
 import { connection } from "../../configs/redis_bullmq.config.js";
-import { createAssignment } from "../createAssignment.js";
+import { createLecture } from "../createLecture.js";
 import { decrypt } from "../crypto.js";
 
 dotenv.config();
-console.log("This Queue is Running for Assignment Creation ✅");
-const assignmentWorker = new Worker(
-  "assignmentCreationQueue",
+console.log("This Queue is Running for Lecture Creation ✅");
+const lectureWorker = new Worker(
+  "lectureCreationQueue",
   async (job) => {
-    const { assignments } = job.data;
-    console.log("🚀 ~ assignments from queue:", assignments)
+    const { lectures } = job.data;
 
-    if (!assignments || assignments.length === 0) {
-      console.log("⚠️ No assignments to process.");
+    if (!lectures || lectures.length === 0) {
+      console.log("⚠️ No lectures to process.");
       return;
     }
 
@@ -29,7 +28,7 @@ const assignmentWorker = new Worker(
     const page = await context.newPage();
     ///
     try {
-      console.log("🔐 Logging into Assessment Platform...");
+      console.log("🔐 Logging into Masai Admin LMS Platform...");
       await page.goto(process.env.MASAI_ADMIN_LMS_URL, {
         waitUntil: "networkidle",
       });
@@ -43,21 +42,20 @@ const assignmentWorker = new Worker(
       );
       await page.click('button[type="submit"]');
       await page.waitForNavigation({ waitUntil: "networkidle" });
-      console.log(" ✅ Login successful");
+      console.log(" ✅ Login successful for the lectures creations");
 
       //////// creation logic
-      for(const a of assignments){
-        const redisKey = `assignments:${a.redisId}`;
-        const status = await createAssignment(page, a);
-
+      for(const lec of lectures){
+        const redisKey = `lectures:${lec.redisId}`;
+        const status = await createLecture(page,lec);
+        console.log("🚀 ~ from the lecture creation queue status:", status)
         await connection.hset(redisKey, {
-          isAssignmentCreated: status === "Done" ? "true" : "false",
-          assignmentCreationError: status === "Error" ? "Creation failed" : "",
+          isNotesUpdated: status==="Done" ? "true" : "false",
           lastUpdated: new Date().toISOString(),
         });
       }
 
-      console.log("🎯 All queued assignments processed successfully!");
+      console.log("🎯 All queued lectures processed successfully!");
     } catch (err) {
       console.error("❌ Worker runtime error:", err.message);
     } finally {

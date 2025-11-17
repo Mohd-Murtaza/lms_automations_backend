@@ -9,6 +9,7 @@
     "clone": "nodemon ./utils/queues/assessmentCloneRenameQueue.js",
     "create": "nodemon ./utils/queues/assignmentCreationQueue.js",
     "update": "nodemon ./utils/queues/notesUpdationQueue.js",
+    "createLecture": "nodemon ./utils/queues/lectureCreationQueue.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -31,7 +32,9 @@
     "fs-extra": "^11.3.2",
     "googleapis": "^164.1.0",
     "ioredis": "^5.8.2",
+    "nodemon": "^3.1.10",
     "open": "^10.2.0",
-    "playwright": "^1.56.1"
+    "playwright": "^1.56.1",
+    "uuid": "^13.0.0"
   }
 }

@@ -1,98 +1,134 @@
-export async function updateNotes(page,assignment){
-    try {
-    console.log(
-      `🚀 Notes Updating Of: ${assignment.assesment_template_name}`
-    );
+import os from "os";
 
-    // 1️⃣ Go to assignments page
-    await page.goto(`https://experience-admin.masaischool.com/lectures/?page=0&title=${assignment.assesment_template_name}`, {
-      waitUntil: "domcontentloaded",
-      timeout: 60000,
-    });
-    console.log("📄 Navigated to lecture Page");
-   /// The data appears in the tab, the first td is the lecture id, get that lectures id and 
-   /// navigate to https://experience-admin.masaischool.com/lectures/edit/?id=<id from above>
-   // then get the text area whose Placeholder is Enter description
-   /// then paste the notes that is assignment.notes
-   // then cick a button whose text is EDIT LECTURE
+export async function updateNotes(page, lecture) {
+  console.log("📚 ~ updateNotes ~ lecture:", lecture.lecture_id, typeof lecture.lecture_id);
 
-   // 2️⃣ Wait for the table to appear
-    await page.waitForSelector("table tbody tr", { timeout: 15000 });
+  try {
+    console.log(`🚀 Notes Updating Of: ${lecture.title}`);
 
-    // 3️⃣ Extract lecture ID from the first row's first cell
-    const lectureId = await page
-      .locator("table tbody tr:first-child td:first-child")
-      .innerText();
-    if (!lectureId) throw new Error("Lecture ID not found in table");
+    // Validate lecture_id
+    const isValidLectureId =
+      typeof lecture.lecture_id === "number" ||
+      (typeof lecture.lecture_id === "string" && /^\d+$/.test(lecture.lecture_id.trim()));
 
-    console.log(`🆔 Found lecture ID: ${lectureId}`);
+    console.log("🚀 ~ updateNotes ~ isValidLectureId:", isValidLectureId);
 
-    // 4️⃣ Navigate to the lecture edit page
-    const editUrl = `https://experience-admin.masaischool.com/lectures/edit/?id=${lectureId}`;
+    let editUrl;
+
+    if (isValidLectureId) {
+      console.log(`🆔 Using provided Lecture ID: ${lecture.lecture_id}`);
+      editUrl = `https://experience-admin.masaischool.com/lectures/edit/?id=${Number(lecture.lecture_id)}`;
+    } else {
+      console.log("📄 Invalid or missing lecture_id, using fallback search...");
+      await page.goto(
+        `https://experience-admin.masaischool.com/lectures/?page=0&title=${lecture.title}`,
+        { waitUntil: "domcontentloaded", timeout: 60000 }
+      );
+      console.log("✅ Navigated to lecture list page");
+
+      await page.waitForSelector("table tbody tr", { timeout: 15000 });
+      const lectureId = await page
+        .locator("table tbody tr:first-child td:first-child")
+        .innerText();
+      if (!lectureId) throw new Error("Lecture ID not found in table");
+      console.log(`🆔 Found lecture ID: ${lectureId}`);
+
+      editUrl = `https://experience-admin.masaischool.com/lectures/edit/?id=${lectureId}`;
+    }
+
+    // Navigate to edit page
     await page.goto(editUrl, { waitUntil: "domcontentloaded", timeout: 60000 });
     console.log(`✏️ Navigated to lecture edit page: ${editUrl}`);
 
-    // 5️⃣ Wait for textarea and fill the notes
-    const notesTextarea = page.locator('textarea[placeholder="Enter description"]');
-    await notesTextarea.waitFor({ state: "visible", timeout: 10000 });
+    // Helper: Fill dropdowns only if empty
+    async function fillReactSelectIfEmpty(xpath, value, label) {
+      try {
+        const container = page.locator(`xpath=${xpath}`);
+      
+        await container.waitFor({ state: "attached", timeout: 20000 });
+      
+        // Check if value-container has the "has-value" class
+        const hasValue = await container.locator(".react-select__value-container--has-value").count();
+      
+        if (hasValue > 0) {
+          console.log(`⏭️ Skipped ${label} (already filled)`);
+          return;
+        }
+      
+        // Fill it now
+        await container.scrollIntoViewIfNeeded();
+        await container.click({ force: true });
+      
+        await page.keyboard.type(value, { delay: 30 });
+        await page.waitForTimeout(1000);
+        await page.keyboard.press("Enter");
+      
+        console.log(`✅ Filled ${label}: ${value}`);
+      
+      } catch (err) {
+        console.log(`⚠️ Could not process ${label}: ${err.message}`);
+      }
+    }
 
-    // Clear old text (if any)
-    await notesTextarea.fill("");
-    await notesTextarea.fill(assignment.notes || "No Notes Provided");
-    console.log("🗒️ Filled lecture notes");
+    await fillReactSelectIfEmpty(
+      "/html/body/div/div/div/main/form/div[1]/div[3]/div/div/label[1]/div/div",
+      "Test Group",
+      "Group Type"
+    );
 
-    // //// Group Type
-    // const groupTypeInput = page.locator(
-    //   "xpath=/html/body/div/div/div/main/form/div[2]/div[3]/div/div/label[1]/div/div/div[1]/div[2]/input"
-    // );
-    // await groupTypeInput.waitFor({ state: "visible", timeout: 10000 });
-    // await groupTypeInput.click({ force: true }); // focus field
-    // await page.keyboard.type("Test Group", { delay: 30 });
-    // await page.keyboard.press("Enter");
-    // console.log(`✅ Typed Group Type`);
+    await fillReactSelectIfEmpty(
+      "/html/body/div/div/div/main/form/div[1]/div[3]/div/div/label[2]/div/div",
+      "topic_title_002",
+      "Topic"
+    );
 
-    // /// Topic
-    // const topicInput = page.locator(
-    //   "xpath=/html/body/div/div/div/main/form/div[2]/div[3]/div/div/label[2]/div/div/div[1]/div[2]/input"
-    // );
-    // await topicInput.waitFor({ state: "visible", timeout: 10000 });
-    // await topicInput.click({ force: true }); // focus field
-    // await page.keyboard.type("topic_title_002", { delay: 30 });
-    // await page.keyboard.press("Enter");
-    // console.log(`✅ Typed Group Type`);
+    await fillReactSelectIfEmpty(
+      "/html/body/div/div/div/main/form/div[1]/div[3]/div/div/label[3]/div/div",
+      "test_LO_003",
+      "Learning Objective"
+    );
 
-    // /// learning_Objectives_Input
-    // const learning_Objectives_Input = page.locator(
-    //   "xpath=/html/body/div/div/div/main/form/div[2]/div[3]/div/div/label[3]/div/div/div[1]/div[2]/input"
-    // );
-    // await learning_Objectives_Input.waitFor({
-    //   state: "visible",
-    //   timeout: 10000,
-    // });
-    // await learning_Objectives_Input.click({ force: true }); // focus field
-    // await page.keyboard.type("test_LO_003", { delay: 30 });
-    // await page.keyboard.press("Enter");
-    // console.log(`✅ Typed Group Type`);
+    // for notes updating
+    try {
+      const selectAllKey = os.platform() === "darwin" ? "Meta+A" : "Control+A";
 
+      const notesXpath = "/html/body/div/div/div/main/form/div[5]/div/div[2]/div[1]/div/textarea";
+      const notesLocator = page.locator(`xpath=${notesXpath}`);
+      await notesLocator.waitFor({ state: "attached", timeout: 20000 });
 
-    // 6️⃣ Click the "EDIT LECTURE" button
-    const editButton = page.locator('button:has-text("EDIT LECTURE")');
-    await editButton.waitFor({ state: "visible", timeout: 10000 });
-    await editButton.click({ force: true });
-    console.log("💾 Clicked 'EDIT LECTURE' button");
+      await notesLocator.scrollIntoViewIfNeeded();
+      await notesLocator.click({ force: true });
+      await page.keyboard.press(selectAllKey);
+      await page.keyboard.press("Backspace");
+      await notesLocator.fill(lecture.notes || "No Notes Provided");
+      await page.waitForTimeout(1000);
+      await page.keyboard.press("Enter");
 
-    // 7️⃣ Wait for confirmation (toast / navigation)
+      console.log("🗒️ Notes updated successfully");
+    } catch (err) {
+      console.log(`⚠️ Could not update notes: ${err.message}`);
+    }
+
+    // Click EDIT LECTURE
+    try {
+      const editButton = page.locator('button:has-text("EDIT LECTURE")');
+      await editButton.waitFor({ state: "attached", timeout: 20000 });
+      await editButton.scrollIntoViewIfNeeded();
+      await page.waitForTimeout(1000);
+      await editButton.click({ force: true });
+      console.log("💾 Clicked 'EDIT LECTURE' button, notes updated");
+    } catch (err) {
+      console.log(`⚠️ Could not click EDIT LECTURE button: ${err.message}`);
+    }
+
     await page.waitForTimeout(2000);
-    console.log("✅ Notes updated successfully");
-    
-    console.log("Notes Updation Done")
+    console.log("✅ Notes update process completed for:", lecture.title);
     return "Done";
   } catch (err) {
     console.error(
-      `❌ Error while creating assignment '${assignment.assesment_template_name}':`,
+      `❌ Error while updating lecture '${lecture.title}':`,
       err.message
     );
     return "Error";
   }
-    
 }

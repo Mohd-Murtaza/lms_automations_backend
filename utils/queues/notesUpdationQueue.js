@@ -3,6 +3,7 @@ import { chromium } from "playwright";
 import dotenv from "dotenv";
 import { connection } from "../../configs/redis_bullmq.config.js";
 import { updateNotes } from "../notesUpdation.js";
+import { decrypt } from "../crypto.js";
 
 dotenv.config();
 console.log("This Queue is Running for Notes Updation ✅");
@@ -17,10 +18,15 @@ const notesUpdationWorker = new Worker(
     }
 
     // 🧭 Launch browser once
-    const browser = await chromium.launch({ headless: false, slowMo: 100 });
-    const page = await browser.newPage({
-      viewport: { width: 1920, height: 1080 },
+    const browser = await chromium.launch({
+      headless: false,
+      slowMo: 100,
+      args: ["--start-maximized"],
     });
+
+    const context = await browser.newContext({ viewport: null });
+    const page = await context.newPage();
+
 
     try {
       console.log("🔐 Logging into LMS...");
@@ -33,20 +39,20 @@ const notesUpdationWorker = new Worker(
       );
       await page.fill(
         'input[type="password"]',
-        process.env.MASAI_ADMIN_LMS_USER_PASSWORD
+        decrypt(process.env.MASAI_ADMIN_LMS_USER_PASSWORD)
       );
       await page.click('button[type="submit"]');
       await page.waitForNavigation({ waitUntil: "networkidle" });
       console.log("✅ LMS Login successful");
 
       //////// 🧠 Start updating notes
-      for (const lecture of lectures) {
-        const redisKey = `assignment:${lecture.assesment_template_name}`;
+      for (const lec of lectures) {
+        const redisKey = `assignments:${lec.redisId}`;
         console.log(
-          `🧾 Processing Lecture: ${lecture.assesment_template_name}`
+          `🧾 Processing Lecture: ${lec.title}`
         );
 
-        const status = await updateNotes(page, lecture);
+        const status = await updateNotes(page, lec);
         console.log(`📋 updateNotes returned: ${status}`);
 
         await connection.hset(redisKey, {
@@ -55,7 +61,7 @@ const notesUpdationWorker = new Worker(
           lastUpdated: new Date().toISOString(),
         });
         console.log(
-          `📦 Redis updated for assignment: ${lecture.assesment_template_name}`
+          `📦 Redis updated for assignment: ${lec.title}`
         );
        
       }

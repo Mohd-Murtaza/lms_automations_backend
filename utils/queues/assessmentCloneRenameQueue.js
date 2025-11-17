@@ -1,4 +1,5 @@
 import { Worker } from "bullmq";
+import { decrypt } from "../crypto.js";
 import { chromium } from "playwright";
 import dotenv from "dotenv";
 import { connection } from "../../configs/redis_bullmq.config.js";
@@ -9,7 +10,7 @@ dotenv.config();
 
 // 🧭 Create Worker
 const automationWorker = new Worker(
-  "assessmenCloneRenameQueue",
+  "assessmentCloneRenameQueue",
   async (job) => {
     const { assignments } = job.data;
     if (!assignments || assignments.length === 0) {
@@ -18,14 +19,20 @@ const automationWorker = new Worker(
     }
 
     // 🧭 Launch browser once
-    const browser = await chromium.launch({ headless: false, slowMo: 100 });
-    const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
+    const browser = await chromium.launch({
+      headless: false,
+      slowMo: 100,
+      args: ["--start-maximized"],
+    });
+
+    const context = await browser.newContext({ viewport: null });
+    const page = await context.newPage();
 
     try {
       console.log("🔐 Logging into Assessment Platform...");
       await page.goto(process.env.MASAI_ASSESS_PLATFORM_URL, { waitUntil: "networkidle" });
       await page.fill('input[type="text"]', process.env.MASAI_ASSESS_PLATFORM_USER_EMAIL);
-      await page.fill('input[type="password"]', process.env.MASAI_ASSESS_PLATFORM_USER_PASSWORD);
+      await page.fill('input[type="password"]', decrypt(process.env.MASAI_ASSESS_PLATFORM_USER_PASSWORD));
       await page.click('button[type="submit"]');
       await page.waitForNavigation({ waitUntil: "networkidle" });
       console.log("✅ Login successful");
@@ -40,26 +47,26 @@ const automationWorker = new Worker(
       console.log("✅ Client selected: Masai LMS");
 
       // Process all assignments sequentially
-      for (const a of assignments) {
+      for(const a of assignments) {
         if ((a.isCloned || "").toLowerCase() === "yes") {
-          console.log(`⏩ Skipping already cloned: ${a.assesment_template_name}`);
+          console.log(`⏩ Skipping already cloned: ${a.assessment_template_name}`);
           continue;
         }
-
-        console.log(`🚀 Starting clone for: ${a.assesment_template_name}`);
+        
+        console.log(`🚀 Starting clone for: ${a.assessment_template_name}`);
 
         const status = await cloneAndEditAssessment(
           page,
           a.previous_assessment_templateName,
-          a.assesment_template_name
+          a.assessment_template_name
         );
 
         // Optionally update Redis to track progress
-        const redisKey = `assignment:${a.assesment_template_name}`;
-        await connection.hset(redisKey, "isCloned", status === "Done" ? "yes" : "error");
+        const redisKey = `assignments:${a.redisId}`;
+        await connection.hset(redisKey, "isCloned", status === "Done" ? "yes" : "no");
         await connection.hset(redisKey, "lastUpdated", new Date().toISOString());
 
-        console.log(`✅ ${a.assesment_template_name} → ${status}`);
+        console.log(`✅ ${a.assessment_template_name} → ${status}`);
       }
 
       console.log("🎯 All queued assessments processed successfully!");

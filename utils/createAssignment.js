@@ -1,7 +1,7 @@
 export async function createAssignment(page, assignment) {
   try {
     console.log(
-      `🚀 Creating assignment: ${assignment.assesment_template_name}`
+      `🚀 Creating assignment: ${assignment.title}`
     );
 
     // 1️⃣ Go to assignments page
@@ -14,6 +14,7 @@ export async function createAssignment(page, assignment) {
     // 2️⃣ Click the "CREATE ASSIGNMENT" button
     const createBtn = page.locator('button:has-text("CREATE ASSIGNMENT")');
     await createBtn.waitFor({ state: "visible", timeout: 10000 });
+    await page.waitForTimeout(1000); 
     await createBtn.click({ force: true });
     console.log("🖱️ Clicked on 'CREATE ASSIGNMENT' button");
 
@@ -29,7 +30,8 @@ export async function createAssignment(page, assignment) {
     );
     await typeInput.waitFor({ state: "visible", timeout: 10000 });
     await typeInput.click({ force: true }); // focus field
-    await page.keyboard.type(assignment.type, { delay: 30 });
+    await typeInput.fill(assignment.type, {delay : 30});
+    await page.waitForTimeout(1000); 
     await page.keyboard.press("Enter");
     console.log(`✅ Selected Type: ${assignment.type}`);
 
@@ -39,7 +41,8 @@ export async function createAssignment(page, assignment) {
     );
     await categoryInput.waitFor({ state: "visible", timeout: 10000 });
     await categoryInput.click({ force: true }); // focus field
-    await page.keyboard.type(assignment.category, { delay: 30 });
+    await categoryInput.fill(assignment.category, {delay : 30});
+    await page.waitForTimeout(1000);
     await page.keyboard.press("Enter");
     console.log(`✅ Selected category: ${assignment.tags}`);
 
@@ -49,7 +52,8 @@ export async function createAssignment(page, assignment) {
     );
     await tagsInput.waitFor({ state: "visible", timeout: 10000 });
     await tagsInput.click({ force: true }); // focus field
-    await page.keyboard.type(assignment.tags, { delay: 30 });
+    await tagsInput.fill(assignment.tags, {delay : 30});
+    await page.waitForTimeout(1000);
     await page.keyboard.press("Enter");
     console.log(`✅ Selected tags: ${assignment.tags}`);
 
@@ -59,8 +63,10 @@ export async function createAssignment(page, assignment) {
     );
     await platformsInput.waitFor({ state: "visible", timeout: 10000 });
     await platformsInput.click({ force: true }); // focus field
-    await page.keyboard.type(assignment.platforms, { delay: 30 });
+    await platformsInput.fill(assignment.platforms, {delay : 30});
+    await page.waitForTimeout(1000);
     await page.keyboard.press("Enter");
+    await page.waitForTimeout(800);
     console.log(`✅ Selected platforms: ${assignment.platforms}`);
 
     //platforms clients - Masai LMS, Masai One, Interview Production etc
@@ -69,9 +75,10 @@ export async function createAssignment(page, assignment) {
     );
     await clientsInput.waitFor({ state: "visible", timeout: 10000 });
     await clientsInput.click({ force: true }); // focus field
-    await page.keyboard.type(assignment.assess_client, { delay: 30 });
+    await clientsInput.fill(assignment.assess_client, {delay : 30});
+    await page.waitForTimeout(1000);
     await page.keyboard.press("Enter");
-    console.log(`✅ Selected client: ${assignment.platforms}`);
+    console.log(`✅ Selected client: ${assignment.assess_client}`);
 
     /// click template input
     /// click an input whose placeholer is Enter Assessment Template
@@ -88,7 +95,7 @@ export async function createAssignment(page, assignment) {
     console.log(
       "🖱️ Clicked 'Enter Assessment Template' input — modal should open"
     );
-    await page.waitForTimeout(100);
+    await page.waitForTimeout(1000);
     // // Wait for the modal to appear
     // await page.waitForSelector('div[role="dialog"]', { timeout: 10000 });
     // console.log("🪟 Assessment template modal appeared");
@@ -98,19 +105,20 @@ export async function createAssignment(page, assignment) {
       'input[placeholder="Search by title"]'
     );
     await modalSearchInput.waitFor({ state: "visible", timeout: 10000 });
-    await modalSearchInput.fill(assignment.assesment_template_name);
+    await modalSearchInput.fill(assignment.assessment_template_name);
     console.log(
-      `🔍 Searching for template: ${assignment.assesment_template_name}`
+      `🔍 Searching for template: ${assignment.assessment_template_name}`
     );
 
     // Wait a moment for table results to load
-    await page.waitForTimeout(800);
+    await page.waitForTimeout(1000);
 
     // Click the first checkbox (first row in the table)
     const firstCheckbox = page
       .locator('table tbody tr:first-child td input[type="checkbox"]')
       .first();
     await firstCheckbox.waitFor({ state: "visible", timeout: 10000 });
+    await page.waitForTimeout(1000);
     await firstCheckbox.click({ force: true });
     console.log(
       `✅ Selected first assessment result for: ${assignment.assesment_template_name}`
@@ -130,7 +138,8 @@ export async function createAssignment(page, assignment) {
     );
     await batchInput.waitFor({ state: "visible", timeout: 10000 });
     await batchInput.click({ force: true }); // focus field
-    await page.keyboard.type(assignment.batch, { delay: 30 });
+    await batchInput.fill(assignment.batch, { delay: 30 });
+    await page.waitForTimeout(1000); 
     await page.keyboard.press("Enter");
     console.log(`✅ Selected batch: ${assignment.batch}`);
 
@@ -140,7 +149,8 @@ export async function createAssignment(page, assignment) {
     );
     await sectionInput.waitFor({ state: "visible", timeout: 10000 });
     await sectionInput.click({ force: true }); // focus field
-    await page.keyboard.type(assignment.section, { delay: 30 });
+    await sectionInput.fill(assignment.section, { delay: 30 });
+    await page.waitForTimeout(1000); 
     await page.keyboard.press("Enter");
     console.log(`✅ Selected section: ${assignment.section}`);
 
@@ -151,6 +161,7 @@ export async function createAssignment(page, assignment) {
     await associatedLecturesInput.waitFor({ state: "visible", timeout: 10000 });
     await associatedLecturesInput.click({ force: true }); // focus field
     await page.keyboard.type(assignment.title, { delay: 30 });
+    await page.waitForTimeout(1000); 
     await page.keyboard.press("Enter");
     console.log(`✅ Selected associated lectures: ${assignment.title}`);
 
@@ -161,6 +172,7 @@ export async function createAssignment(page, assignment) {
     await groupTypeInput.waitFor({ state: "visible", timeout: 10000 });
     await groupTypeInput.click({ force: true }); // focus field
     await page.keyboard.type("Test Group", { delay: 30 });
+    await page.waitForTimeout(1000); 
     await page.keyboard.press("Enter");
     console.log(`✅ Typed Group Type`);
 
@@ -171,6 +183,7 @@ export async function createAssignment(page, assignment) {
     await topicInput.waitFor({ state: "visible", timeout: 10000 });
     await topicInput.click({ force: true }); // focus field
     await page.keyboard.type("topic_title_002", { delay: 30 });
+    await page.waitForTimeout(1000); 
     await page.keyboard.press("Enter");
     console.log(`✅ Typed Group Type`);
 
@@ -184,6 +197,7 @@ export async function createAssignment(page, assignment) {
     });
     await learning_Objectives_Input.click({ force: true }); // focus field
     await page.keyboard.type("test_LO_003", { delay: 30 });
+    await page.waitForTimeout(1000); 
     await page.keyboard.press("Enter");
     console.log(`✅ Typed Group Type`);
 
@@ -235,7 +249,7 @@ export async function createAssignment(page, assignment) {
     return "Done";
   } catch (err) {
     console.error(
-      `❌ Error while creating assignment '${assignment.assesment_template_name}':`,
+      `❌ Error while creating assignment '${assignment.title}':`,
       err.message
     );
     return "Error";
