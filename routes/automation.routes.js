@@ -3,7 +3,10 @@ import dotenv from "dotenv";
 import { v4 as uuidv4 } from "uuid";
 import { getSheetsClient } from "../configs/googleSheetClient.js";
 import { assessmentCloneRenameQueue, assignmentCreationQueue, connection, notesUpdationQueue, lectureCreationQueue} from "../configs/redis_bullmq.config.js";
-dotenv.config();
+import { getConfig } from "../utils/getConfig.js";
+const { GOOGLE_SHEET_ID } = getConfig();
+
+
 
 export const AutomationRouter = express.Router();
 
@@ -26,7 +29,7 @@ AutomationRouter.post("/add-data", async (req, res) => {
     console.log(`📄 Reading sheet: ${sheetName}`);
 
     const sheets = getSheetsClient();
-    const spreadsheetId = process.env.GOOGLE_SHEET_ID;
+    const spreadsheetId = GOOGLE_SHEET_ID;
 
     // --- FETCH SHEET METADATA TO GET sheetId ---
     const meta = await sheets.spreadsheets.get({ spreadsheetId });
@@ -511,7 +514,7 @@ AutomationRouter.patch("/update-automation-status", async (req, res) => {
 
     // ---------- UPDATE GOOGLE SHEET ----------
     const sheets = getSheetsClient();
-    const spreadsheetId = process.env.GOOGLE_SHEET_ID;
+    const spreadsheetId = GOOGLE_SHEET_ID;
 
     const sheetName = type === "assignments" ? "assignment" : "lecture";
     const range = `${sheetName}!A:Z`;
@@ -580,7 +583,7 @@ AutomationRouter.delete("/cleardata", async (req, res) => {
     // 🔥 1) CLEAR Google Sheet redisId Column
     // ------------------------------------------
     const sheets = getSheetsClient();
-    const spreadsheetId = process.env.GOOGLE_SHEET_ID;
+    const spreadsheetId = GOOGLE_SHEET_ID;
 
     const sheetName = type === "assignments" ? "assignment" : "lecture";
     const range = `${sheetName}!A:Z`;

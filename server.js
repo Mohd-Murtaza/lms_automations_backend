@@ -5,8 +5,8 @@ import cors from "cors";
 import fs from "fs";
 import { google } from "googleapis";
 import { getAuthClient } from "./configs/googleSheetClient.js";
-import { AutomationRouter } from "./routes/automations.routes.js";
-import { EnvRouter } from "./routes/env.routes.js";
+import { AutomationRouter } from "./routes/automation.routes.js";
+import { ConfigRouter } from "./routes/config.routes.js";
 
 
 
@@ -50,7 +50,7 @@ app.get("/test", (req, res) => {
 
 // ✅ Main API routes
 app.use("/api", AutomationRouter);
-app.use("/env", EnvRouter);
+app.use("/config", ConfigRouter);
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);

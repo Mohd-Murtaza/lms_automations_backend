@@ -5,6 +5,8 @@ import dotenv from "dotenv";
 import { connection } from "../../configs/redis_bullmq.config.js";
 import { cloneAndEditAssessment } from "../cloneAndEditAssessment.js";
 import { updateSheetCell } from "../updateSheet.js";
+import { getConfig } from "../getConfig.js";
+const { MASAI_ASSESS_PLATFORM_USER_EMAIL, MASAI_ASSESS_PLATFORM_USER_PASSWORD, GOOGLE_SHEET_ID } = getConfig()
 
 
 dotenv.config();
@@ -32,8 +34,8 @@ const automationWorker = new Worker(
     try {
       console.log("🔐 Logging into Assessment Platform...");
       await page.goto(process.env.MASAI_ASSESS_PLATFORM_URL, { waitUntil: "networkidle" });
-      await page.fill('input[type="text"]', process.env.MASAI_ASSESS_PLATFORM_USER_EMAIL);
-      await page.fill('input[type="password"]', decrypt(process.env.MASAI_ASSESS_PLATFORM_USER_PASSWORD));
+      await page.fill('input[type="text"]', MASAI_ASSESS_PLATFORM_USER_EMAIL);
+      await page.fill('input[type="password"]', decrypt(MASAI_ASSESS_PLATFORM_USER_PASSWORD));
       await page.click('button[type="submit"]');
       await page.waitForNavigation({ waitUntil: "networkidle" });
       console.log("✅ Login successful");
@@ -69,7 +71,7 @@ const automationWorker = new Worker(
         await connection.hset(redisKey, "lastUpdated", new Date().toISOString());
         // Update Sheet
         await updateSheetCell(
-          process.env.GOOGLE_SHEET_ID,
+          GOOGLE_SHEET_ID,
           "assignment",
           a.redisId,
           "isCloned",

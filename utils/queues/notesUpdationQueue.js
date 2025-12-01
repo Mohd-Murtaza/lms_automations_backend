@@ -5,7 +5,8 @@ import { connection } from "../../configs/redis_bullmq.config.js";
 import { updateNotes } from "../notesUpdation.js";
 import { decrypt } from "../crypto.js";
 import { updateSheetCell } from "../updateSheet.js";
-
+import { getConfig } from "../getConfig.js";
+const { MASAI_ADMIN_LMS_USER_EMAIL, MASAI_ADMIN_LMS_USER_PASSWORD, GOOGLE_SHEET_ID} = getConfig()
 dotenv.config();
 console.log("This Queue is Running for Notes Updation ✅");
 const notesUpdationWorker = new Worker(
@@ -36,11 +37,11 @@ const notesUpdationWorker = new Worker(
       });
       await page.fill(
         'input[type="email"]',
-        process.env.MASAI_ADMIN_LMS_USER_EMAIL
+        MASAI_ADMIN_LMS_USER_EMAIL
       );
       await page.fill(
         'input[type="password"]',
-        decrypt(process.env.MASAI_ADMIN_LMS_USER_PASSWORD)
+        decrypt(MASAI_ADMIN_LMS_USER_PASSWORD)
       );
       await page.click('button[type="submit"]');
       await page.waitForNavigation({ waitUntil: "networkidle" });
@@ -64,7 +65,7 @@ const notesUpdationWorker = new Worker(
 
         // Update Sheet
         await updateSheetCell(
-          process.env.GOOGLE_SHEET_ID,
+          GOOGLE_SHEET_ID,
           "assignment",
           lec.redisId,
           "isNotesUpdated",
