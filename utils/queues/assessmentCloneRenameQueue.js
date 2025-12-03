@@ -1,5 +1,4 @@
 import { Worker } from "bullmq";
-import { decrypt } from "../crypto.js";
 import { chromium } from "playwright";
 import dotenv from "dotenv";
 import { connection } from "../../configs/redis_bullmq.config.js";
@@ -35,7 +34,7 @@ const automationWorker = new Worker(
       console.log("🔐 Logging into Assessment Platform...");
       await page.goto(process.env.MASAI_ASSESS_PLATFORM_URL, { waitUntil: "networkidle" });
       await page.fill('input[type="text"]', MASAI_ASSESS_PLATFORM_USER_EMAIL);
-      await page.fill('input[type="password"]', decrypt(MASAI_ASSESS_PLATFORM_USER_PASSWORD));
+      await page.fill('input[type="password"]', MASAI_ASSESS_PLATFORM_USER_PASSWORD);
       await page.click('button[type="submit"]');
       await page.waitForNavigation({ waitUntil: "networkidle" });
       console.log("✅ Login successful");

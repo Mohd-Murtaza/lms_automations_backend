@@ -3,7 +3,6 @@ import { chromium } from "playwright";
 import dotenv from "dotenv";
 import { connection } from "../../configs/redis_bullmq.config.js";
 import { createLecture } from "../createLecture.js";
-import { decrypt } from "../crypto.js";
 import { updateSheetCell } from "../updateSheet.js";
 import { getConfig } from "../getConfig.js";
 const { MASAI_ADMIN_LMS_USER_EMAIL, MASAI_ADMIN_LMS_USER_PASSWORD, GOOGLE_SHEET_ID } = getConfig()
@@ -40,7 +39,7 @@ const lectureWorker = new Worker(
       );
       await page.fill(
         'input[type="password"]',
-        decrypt(MASAI_ADMIN_LMS_USER_PASSWORD)
+        MASAI_ADMIN_LMS_USER_PASSWORD
       );
       await page.click('button[type="submit"]');
       await page.waitForNavigation({ waitUntil: "networkidle" });
